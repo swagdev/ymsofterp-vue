@@ -20,7 +20,28 @@ const menuGroups = [
             { name: () => t('sidebar.users'), icon: 'fa-solid fa-users', route: '/users' },
         ],
     },
-   
+    {
+        title: () => t('human_resource.main'),
+        icon: 'fa-solid fa-user-tie',
+        collapsible: true,
+        open: ref(false),
+        menus: [
+            { name: () => t('human_resource.data_karyawan'), icon: 'fa-solid fa-users', route: route('employee.index') },
+            { name: () => t('human_resource.position'), icon: 'fa-solid fa-briefcase', route: route('position.index') },
+            { name: () => t('human_resource.level'), icon: 'fa-solid fa-layer-group', route: route('level.index') },
+            { name: () => t('human_resource.master_payroll'), icon: 'fa-solid fa-money-bill-wave', route: route('master_payroll.index') },
+            { name: () => t('Payroll'), icon: 'fa-solid fa-calculator', route: route('payroll.index') },
+        ],
+    },
+    {
+        title: () => t('Manage Member'),
+        icon: 'fa-solid fa-user-tie',
+        collapsible: true,
+        open: ref(false),
+        menus: [
+            { name: () => t('Data Member'), icon: 'fa-solid fa-users', route: route('member.index') },
+        ],
+    },
     {
         title: () => t('sidebar.maintenance'),
         icon: 'fa-solid fa-screwdriver-wrench',

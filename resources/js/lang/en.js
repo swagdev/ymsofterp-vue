@@ -15,6 +15,13 @@ export default {
     weather: 'Weather',
     powered: 'Crafted with ❤️ by IT Department-Justus Group',
   },
+  human_resource: {
+    main: 'Human Resource',
+    data_karyawan: 'Employee Data',
+    position: 'Position',
+    level: 'Level',
+    master_payroll: 'Master Payroll',
+  },
   sidebar: {
     main: 'Main',
     management: 'Management',

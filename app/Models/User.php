@@ -6,6 +6,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\MasterGaji;
+use App\Models\TransaksiGaji;
+use App\models\Jabatan;
+use App\models\Divisi;
+use App\models\Outlet;
 
 class User extends Authenticatable
 {
@@ -52,13 +57,33 @@ class User extends Authenticatable
         return $query->where('status', 'A');
     }
 
+    public function mgaji() {
+        return $this->hasOne(MasterGaji::class, 'user_id', 'id');
+    }
+
+    public function tgajisatuan() {
+        return $this->hasOne(TransaksiGaji::class, 'user_id', 'id')->latestOfMany();
+    }
+
+    public function hasjabatan() {
+        return $this->hasOne(Jabatan::class, 'id_jabatan', 'id_jabatan');
+    }
+
+    public function hasdivisi() {
+        return $this->hasOne(Divisi::class, 'division_id', 'id');
+    }
+
+    public function hasoutlet() {
+        return $this->hasOne(Outlet::class, 'id_outlet', 'id_outlet');
+    }
+
     public function jabatan() {
-        return $this->belongsTo(\App\Models\Jabatan::class, 'id_jabatan', 'id_jabatan');
+        return $this->belongsTo(Jabatan::class, 'id_jabatan', 'id_jabatan');
     }
     public function divisi() {
-        return $this->belongsTo(\App\Models\Divisi::class, 'division_id', 'id');
+        return $this->belongsTo(Divisi::class, 'division_id', 'id');
     }
     public function outlet() {
-        return $this->belongsTo(\App\Models\Outlet::class, 'id_outlet', 'id_outlet');
+        return $this->belongsTo(Outlet::class, 'id_outlet', 'id_outlet');
     }
 }

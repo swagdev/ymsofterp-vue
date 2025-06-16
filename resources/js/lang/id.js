@@ -15,6 +15,13 @@ export default {
     weather: 'Cuaca',
     powered: 'Crafted with ❤️ by IT Department-Justus Group',
   },
+  human_resource: {
+    main: 'Human Resource',
+    data_karyawan: 'Data Karyawan',
+    position: 'Jabatan',
+    level: 'Level',
+    master_payroll: 'Master Payroll',
+  },
   sidebar: {
     main: 'Utama',
     management: 'Manajemen',

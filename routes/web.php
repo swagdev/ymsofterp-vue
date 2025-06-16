@@ -21,6 +21,12 @@ use App\Http\Controllers\RegionController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\MasterPayrollController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\LevelController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\WarehouseDivisionController;
 use App\Http\Controllers\MenuTypeController;
 use App\Http\Controllers\OutletMapDashboardController;
@@ -41,6 +47,72 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return redirect('/home');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+
+// Data Karyawan routes
+Route::middleware('auth')->group(function () {
+    Route::get('/employee-data', [EmployeeController::class, 'index'])->name('employee.index');
+    Route::get('/employee-create', [EmployeeController::class, 'create'])->name('employee.create');
+    Route::get('/employee-edit/{id}', [EmployeeController::class, 'edit'])->name('employee.edit');
+    Route::post('/employee-store', [EmployeeController::class, 'store'])->name('employee.store');
+    Route::post('/employee-update/{id}', [EmployeeController::class, 'update'])->name('employee.update');
+    Route::delete('/employee-delete/{id}', [EmployeeController::class, 'destroy'])->name('employee.destroy');
+    Route::patch('/employee-data/{id}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employee.toggle-status');
+});
+
+// Data Jabatan routes
+Route::middleware('auth')->group(function () {
+    Route::get('/position-data', [PositionController::class, 'index'])->name('position.index');
+    Route::get('/position-create', [PositionController::class, 'create'])->name('position.create');
+    Route::get('/position-edit/{id}', [PositionController::class, 'edit'])->name('position.edit');
+    Route::post('/position-store', [PositionController::class, 'store'])->name('position.store');
+    Route::post('/position-update/{id}', [PositionController::class, 'update'])->name('position.update');
+    Route::delete('/position-delete/{id}', [PositionController::class, 'destroy'])->name('position.destroy');
+    Route::patch('/position-data/{id}/toggle-status', [PositionController::class, 'toggleStatus'])->name('position.toggle-status');
+});
+
+// Data Level routes
+Route::middleware('auth')->group(function () {
+    Route::get('/level-data', [LevelController::class, 'index'])->name('level.index');
+    Route::get('/level-create', [LevelController::class, 'create'])->name('level.create');
+    Route::get('/level-edit/{id}', [LevelController::class, 'edit'])->name('level.edit');
+    Route::post('/level-store', [LevelController::class, 'store'])->name('level.store');
+    Route::post('/level-update/{id}', [LevelController::class, 'update'])->name('level.update');
+    Route::delete('/level-delete/{id}', [LevelController::class, 'destroy'])->name('level.destroy');
+    Route::patch('/level-data/{id}/toggle-status', [LevelController::class, 'toggleStatus'])->name('level.toggle-status');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/master-payroll', [MasterPayrollController::class, 'index'])->name('master_payroll.index');
+    Route::post('/master-payroll', [MasterPayrollController::class, 'index'])->name('master_payroll.index');
+    Route::get('/master-payroll-create', [MasterPayrollController::class, 'create'])->name('master_payroll.create');
+    // Route::get('/level-edit/{id}', [MasterPayrollController::class, 'edit'])->name('level.edit');
+    // Route::post('/level-store', [MasterPayrollController::class, 'store'])->name('level.store');
+    Route::patch('/master-payroll-update/{id}', [MasterPayrollController::class, 'update'])->name('master_payroll.update');
+    Route::post('/master-payroll/load-master-other', [MasterPayrollController::class, 'loadmasterother'])->name('master_payroll.load_master_other');
+    Route::post('/master-payroll/save-master-other', [MasterPayrollController::class, 'savemasterother'])->name('master_payroll.save_master_other');
+    // Route::delete('/level-delete/{id}', [MasterPayrollController::class, 'destroy'])->name('level.destroy');
+    // Route::patch('/level-data/{id}/toggle-status', [MasterPayrollController::class, 'toggleStatus'])->name('level.toggle-status');
+});
+
+// Data Member routes
+Route::middleware('auth')->group(function () {
+    Route::get('/member-data', [MemberController::class, 'index'])->name('member.index');
+    Route::post('/member-data', [MemberController::class, 'index'])->name('member.index');
+    Route::post('/member-data/{id}', [MemberController::class, 'update'])->name('member.update');
+    Route::post('/detail-view', [MemberController::class, 'view_detail'])->name('member.view_detail');
+    Route::delete('/member-data/{id}', [MemberController::class, 'destroy'])->name('member.destroy');
+    Route::patch('/member-data/{id}/toggle-status', [MemberController::class, 'toggleStatus'])->name('member.toggle-status');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::get('/payroll-create', [PayrollController::class, 'create'])->name('master_payroll.create');
+    Route::patch('/payroll-update/{id}', [PayrollController::class, 'update'])->name('master_payroll.update');
+    Route::post('/payroll/load-master-other', [PayrollController::class, 'loadmasterother'])->name('master_payroll.load_master_other');
+    Route::post('/payroll/save-master-other', [PayrollController::class, 'savemasterother'])->name('master_payroll.save_master_other');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
