@@ -108,10 +108,9 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::post('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
-    Route::get('/payroll-create', [PayrollController::class, 'create'])->name('master_payroll.create');
-    Route::patch('/payroll-update/{id}', [PayrollController::class, 'update'])->name('master_payroll.update');
-    Route::post('/payroll/load-master-other', [PayrollController::class, 'loadmasterother'])->name('master_payroll.load_master_other');
-    Route::post('/payroll/save-master-other', [PayrollController::class, 'savemasterother'])->name('master_payroll.save_master_other');
+    Route::get('/payroll-create', [PayrollController::class, 'create'])->name('payroll.create');
+    Route::patch('/payroll-update/{id}', [PayrollController::class, 'update'])->name('payroll.update');
+    Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [PayrollController::class, 'generatePDF'])->name('slip-gaji.show');
 });
 
 Route::middleware('auth')->group(function () {

@@ -15,6 +15,7 @@ use Inertia\Inertia;
 use App\Models\ActivityLog;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PayrollController extends Controller
 {
@@ -54,19 +55,19 @@ class PayrollController extends Controller
 
             $query = User::with([
                     'mgaji',
-                    'tgajisatuan' => function($query) use ($tahun, $bulan) {
-                        $query->where('tahun_create', $tahun)
-                              ->where('bulan_create', $bulan);
-                    },
+                    'tgajisatuan',
                     'hasjabatan:id_jabatan,nama_jabatan',
                     'divisi:id,nama_divisi',
                     'hasoutlet:id_outlet,nama_outlet'])
                     ->select('users.id', 'users.id_jabatan', 'users.division_id', 'users.id_outlet', 'users.nama_lengkap')
-                    ->join('tbl_data_outlet as outlet', 'outlet.id_outlet', '=', 'users.id_outlet')
+                    ->leftjoin('tbl_data_outlet as outlet', 'outlet.id_outlet', '=', 'users.id_outlet')
                     ->leftJoin('tbl_master_gaji as mgaji', 'mgaji.user_id', '=', 'users.id')
+                    ->leftjoin('tbl_transaksi_gaji as tgaji', 'tgaji.user_id', '=', 'users.id')
                     ->leftJoin('tbl_data_jabatan as jab', 'jab.id_jabatan', '=', 'users.id_jabatan')
                     ->leftJoin('tbl_data_divisi as div', 'div.id', '=', 'users.division_id')
                     ->where('users.status', 'A');
+                    
+                    
 
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -81,19 +82,56 @@ class PayrollController extends Controller
             if ($request->id_divisi != "0") {
                     $query->where('jab.id_divisi', $divisi_id);
             }
-            if (strtolower($user->jabatan->nama_jabatan) !== 'admin') {
-                $query->where('jab.id_atasan', $user->jabatan->id_jabatan);
-            }
+            // if (strtolower($user->jabatan->nama_jabatan) !== 'admin') {
+            //     $query->where('jab.id_atasan', $user->jabatan->id_jabatan);
+            // }
             if ($request->outlet_id != "0") {
                 $query->where('outlet.id_outlet', $outlet_id);
             }
+
+            // if (!empty($bulan_tahun)) {
+            //     $query->where('tahun_create', $tahun)->where('bulan_create', $bulan);
+            // }
 
             // if ($request->filled('status') OR empty($request->status)) {
             //     $status = $request->status == 'inactive' ? 'B' : 'A';
             //     $query->where('status', $status);
             // }
-            $d = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
-        // }
+            $d = $query->groupBy('users.id')->orderBy('id', 'desc')->paginate(10)->withQueryString();
+
+            foreach ($d as $index=> $item) {
+                if ($item->tgajisatuan->tahun_create == $tahun && $item->tgajisatuan->bulan_create != $bulan) {
+                   $id = DB::table('tbl_transaksi_gaji')->insertGetId([
+                            'user_id' => $item->id,
+                            'bulan_create' => $bulan,
+                            'tahun_create' => $tahun,
+                            'gaji' => $item->tgajisatuan->gaji ?? 0,
+                            'tunjangan_jabatan' => $item->tgajisatuan->tunjangan_jabatan ?? 0,
+
+                            'over_time_init' => $item->tgajisatuan->over_time_init ?? 0,
+                            'over_time_factor' => $item->tgajisatuan->over_time_factor ?? 0,
+                            'over_time' => $item->tgajisatuan->over_time ?? 0,
+
+                            'uang_makan_init' => $item->tgajisatuan->uang_makan_init ?? 0,
+                            'uang_makan_factor' => $item->tgajisatuan->uang_makan_factor ?? 0,
+                            'uang_makan' => $item->tgajisatuan->uang_makan ?? 0,
+
+                            'public_holiday_init' => $item->tgajisatuan->public_holiday_init ?? 0,
+                            'public_holiday_factor' => $item->tgajisatuan->public_holiday_factor ?? 0,
+                            'public_holiday' => $item->tgajisatuan->public_holiday ?? 0,
+
+                            'telat_init' => $item->tgajisatuan->telat_init ?? 0,
+                            'telat_factor' => $item->tgajisatuan->telat_factor ?? 0,
+                            'telat' => $item->tgajisatuan->telat ?? 0,
+
+                            'bpjs_jkn' => $item->tgajisatuan->bpjs_jkn ?? 0,
+                            'bpjs_tk' => $item->tgajisatuan->bpjs_tk ?? 0,
+                        ]);
+
+                        $sementara = DB::table('tbl_transaksi_gaji')->find($id);
+                        $d[$index]->setRelation('tgajisatuan', $sementara);
+                }
+            }
 
         return Inertia::render('Payroll/Index', [
             'd' => $d,
@@ -104,6 +142,7 @@ class PayrollController extends Controller
                 'search' => $request->search,
             ],
         ]);
+    
     }
 
     public function create()
@@ -248,12 +287,60 @@ class PayrollController extends Controller
     {
         $field = array_keys($request->all())[0];
         $value = $request->input($field);
+        $bulan_tahun = $request->input('bulan_tahun');
+        [$tahun, $bulan] = explode('-', $bulan_tahun);
 
-        DB::table('tbl_master_gaji')
-        ->where('id', $id)
+        DB::table('tbl_transaksi_gaji')
+        ->where('user_id', $id)
+        ->where('tahun_create', $tahun)
+        ->where('bulan_create', $bulan)
         ->update([$field => $value]);
 
         // return response()->json(['success' => true]);
+    }
+
+    public function generatePDF($userId, $bulan_tahun)
+    {
+        $user = User::with(['tgajisatuan', 'hasjabatan', 'hasoutlet', 'divisi'])
+            ->select('id', 'id_jabatan', 'division_id', 'id_outlet', 'nama_lengkap', 'nik', 'no_rekening', 'no_bpjs_tk')
+            ->where('id', $userId)->firstOrFail();
+
+        if (Str::contains($bulan_tahun, '-')) {
+            [$tahun, $bulan] = explode('-', $bulan_tahun);
+        } else {
+            $tahun = now()->format('Y');
+            $bulan = now()->format('m');
+        }
+
+        $start_date = Carbon::create($tahun, $bulan - 1, 26)->startOfDay();
+        $end_date = Carbon::create($tahun, $bulan, 25)->endOfDay();
+        $jumlah_hari_kerja = (int) $start_date->diffInDays($end_date) + 1;
+        
+        $gaji_rata_rata = (($user->tgajisatuan->gaji + $user->tgajisatuan->tunjangan_jabatan) / $jumlah_hari_kerja);
+ 
+        $user->alpa_kerja_factor = DB::table('tbl_attendance as atend')
+            ->where('atend.user_id', $user->id)
+            ->whereBetween('atend.tgl', [$start_date, $end_date])
+            ->whereNull('atend.flag_libur')
+            ->where(function ($query) {
+                $query->where('atend.check_in', '00:00')
+                    ->orWhere('atend.check_out', '00:00');
+            })
+            ->count();
+
+        $user->total_telat = DB::table('tbl_attendance as atend')
+            ->where('atend.user_id', $user->id)
+            ->whereBetween('atend.tgl', [$start_date, $end_date])
+            ->sum('atend.telat');
+
+        $user->total_gaji = $user->tgajisatuan->gaji + $user->tgajisatuan->tunjangan_jabatan;
+        $user->jumlah_alpa_kerja = $gaji_rata_rata * $user->alpa_kerja_factor;
+        $user->jumlah_telat = $user->tgajisatuan->telat_init * $user->total_telat;
+        $user->total_potongan = $user->jumlah_alpa_kerja + $user->jumlah_telat;
+        $user->gaji_bersih = $user->total_gaji - $user->jumlah_alpa_kerja - $user->jumlah_telat;
+            // dd($user->gaji_bersih);
+        $pdf = Pdf::loadView('pdf.slip-gaji', compact('user', 'bulan_tahun'));
+        return $pdf->stream("Slip-Gaji-{$user->nama_lengkap}.pdf");
     }
 
     public function destroy($id)

@@ -104,6 +104,21 @@ function onSubmit() {
 
   form.post(route('payroll.index'), {
     onSuccess: () => {
+      props.d.data.forEach((item) => {
+        loadingField.value[`${item.id}_over_time`] = item.mgaji.over_time == 0 ? true : false;
+        loadingField.value[`${item.id}_uang_makan`] = item.mgaji.uang_makan == 1 ? true : false;
+        loadingField.value[`${item.id}_public_holiday`] = item.mgaji.public_holiday == 1 ? true : false;
+        loadingField.value[`${item.id}_service_charge`] = item.mgaji.service_charge == 1 ? true : false;
+        loadingField.value[`${item.id}_qa_reward`] = item.mgaji.qa_reward == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_jkn`] = item.mgaji.bpjs_jkn == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_tk`] = item.mgaji.bpjs_tk == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_jht`] = item.mgaji.bpjs_jht == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_jp`] = item.mgaji.bpjs_jp == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_jkk`] = item.mgaji.bpjs_jkk == 1 ? true : false;
+        loadingField.value[`${item.id}_bpjs_jkm`] = item.mgaji.bpjs_jkm == 1 ? true : false;
+        loadingField.value[`${item.id}_l_n_b`] = item.mgaji.l_n_b == 1 ? true : false;
+        loadingField.value[`${item.id}_qa_penalty`] = item.mgaji.qa_penalty == 1 ? true : false;
+      });
       Swal.close();
     },
     onError: (errors) => {
@@ -118,10 +133,13 @@ function onSubmit() {
 
 function updateField(userId, field, value) {
   const key = `${userId}_${field}`
-  loadingField.value[key] = true
 
-  axios.patch(route('master_payroll.update', userId), {
-    [field]: value
+  loadingField.value[key] = true
+  const bulan_tahun = form.bulan_tahun;
+
+  axios.patch(route('payroll.update', userId), {
+    [field]: value,
+    bulan_tahun: bulan_tahun,
   }).then(() => {
     Swal.fire({
       toast: true,
@@ -143,6 +161,15 @@ function toggleStatus(customer) {
     onSuccess: reload,
   });
 }
+
+function viewSlipGaji(userId) {
+  const bulan_tahun = form.bulan_tahun;
+  window.open(route('slip-gaji.show', {
+    userId: userId,
+    bulan_tahun: bulan_tahun,
+  }), '_blank')
+}
+
 </script>
 
 <template>
@@ -194,7 +221,7 @@ function toggleStatus(customer) {
       </div>
       </form>
       <div class="flex items-center gap-3 mb-4">
-        <Switch
+        <!-- <Switch
           v-model="showInactive"
           :class="showInactive ? 'bg-blue-600' : 'bg-gray-200'"
           class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -203,10 +230,10 @@ function toggleStatus(customer) {
             :class="showInactive ? 'translate-x-6' : 'translate-x-1'"
             class="inline-block h-4 w-4 transform rounded-full bg-white transition"
           />
-        </Switch>
-        <span class="ml-2 text-sm text-gray-700">Tampilkan Inactive</span>
+        </Switch> -->
+        <!-- <span class="ml-2 text-sm text-gray-700">Tampilkan Inactive</span> -->
       </div>
-      <div class="mb-4">
+      <!-- <div class="mb-4">
         <input
           v-model="search"
           @input="onSearchInput"
@@ -214,7 +241,7 @@ function toggleStatus(customer) {
           placeholder="Cari nama/jabatan/outlet..."
           class="w-full px-4 py-2 rounded-xl border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
         />
-      </div>
+      </div> -->
       <div class="bg-white rounded-2xl shadow-2xl overflow-x-auto transition-all">
         <table class="w-full min-w-full divide-y divide-gray-200">
           <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
@@ -245,7 +272,21 @@ function toggleStatus(customer) {
               <td colspan="6" class="text-center py-10 text-gray-400">Tidak ada data customer.</td>
             </tr>
             <tr v-for="ds in d.data" :key="ds.id" class="hover:bg-blue-50 transition shadow-sm">
-              <td class="px-6 py-3"></td>
+              <td class="px-6 py-3">
+                <button
+                  @click="viewSlipGaji(ds.id)"
+                  class="inline-flex items-center gap-1 px-4 py-1.5 bg-cyan-400 text-white text-sm font-semibold rounded-md hover:bg-cyan-500 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                      viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  SLIP GAJI
+                </button>
+
+
+              </td>
               <td class="px-6 py-3">{{ ds.nama_lengkap }}</td>
               <td class="px-6 py-3">{{ ds.hasjabatan.nama_jabatan }}</td>
               <td class="px-6 py-3">{{ ds.hasoutlet.nama_outlet }}</td>
@@ -254,7 +295,7 @@ function toggleStatus(customer) {
                   type="text"
                   class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Gaji"
-                  v-model="ds.gaji"
+                  v-model="ds.tgajisatuan.gaji"
                   @change="updateField(ds.id, 'gaji', $event.target.value)"
                   :disabled="loadingField[`${ds.id}_gaji`] === true"
                 />
@@ -264,125 +305,151 @@ function toggleStatus(customer) {
                   type="text"
                   class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Tunjangan Jabatan"
-                  v-model="ds.tunjangan_jabatan"
+                  v-model="ds.tgajisatuan.tunjangan_jabatan"
                   @change="updateField(ds.id, 'tunjangan_jabatan', $event.target.value)"
                   :disabled="loadingField[`${ds.id}_tunjangan_jabatan`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.over_time == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Over Time"
+                  v-model="ds.tgajisatuan.over_time"
                   @change="updateField(ds.id, 'over_time', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_over_time`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.uang_makan == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Uang Makan"
+                  v-model="ds.tgajisatuan.uang_makan"
                   @change="updateField(ds.id, 'uang_makan', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_uang_makan`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.public_holiday == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Public Holiday"
+                  v-model="ds.tgajisatuan.public_holiday"
                   @change="updateField(ds.id, 'public_holiday', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_public_holiday`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.service_charge == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Service Charge"
+                  v-model="ds.tgajisatuan.service_charge"
                   @change="updateField(ds.id, 'service_charge', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_service_charge`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.qa_reward == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Qa Reward"
+                  v-model="ds.tgajisatuan.qa_reward"
                   @change="updateField(ds.id, 'qa_reward', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_qa_reward`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_jkn == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs JKN"
+                  v-model="ds.tgajisatuan.bpjs_jkn"
                   @change="updateField(ds.id, 'bpjs_jkn', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_jkn`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_tk == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs TK"
+                  v-model="ds.tgajisatuan.bpjs_tk"
                   @change="updateField(ds.id, 'bpjs_tk', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_tk`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_jht == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs JHT"
+                  v-model="ds.tgajisatuan.bpjs_jht"
                   @change="updateField(ds.id, 'bpjs_jht', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_jht`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_jp == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs JP"
+                  v-model="ds.tgajisatuan.bpjs_jp"
                   @change="updateField(ds.id, 'bpjs_jp', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_jp`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_jkk == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs JKK"
+                  v-model="ds.tgajisatuan.bpjs_jkk"
                   @change="updateField(ds.id, 'bpjs_jkk', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_jkk`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.bpjs_jkm == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="Bpjs JKM"
+                  v-model="ds.tgajisatuan.bpjs_jkm"
                   @change="updateField(ds.id, 'bpjs_jkm', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_bpjs_jkm`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.l_n_b == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="L & B"
+                  v-model="ds.tgajisatuan.l_n_b"
                   @change="updateField(ds.id, 'l_n_b', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_l_n_b`] === true"
                 />
               </td>
               <td class="px-6 py-3">
                 <input
-                  type="checkbox"
-                  :checked="ds.qa_penalty == 1"
+                  type="text"
+                  class="w-[150px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :class="{ 'bg-gray-100 text-gray-400 cursor-not-allowed': loadingField[`${ds.id}_over_time`] === true }"
+                  placeholder="QA Penalty"
+                  v-model="ds.tgajisatuan.qa_penalty"
                   @change="updateField(ds.id, 'qa_penalty', $event.target.value)"
-                  class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition update-column-value"
                   :disabled="loadingField[`${ds.id}_qa_penalty`] === true"
                 />
               </td>
