@@ -35,11 +35,25 @@ const menuGroups = [
     },
     {
         title: () => t('Manage Member'),
-        icon: 'fa-solid fa-user-tie',
+        icon: 'fa-solid fa-file-lines',
         collapsible: true,
         open: ref(false),
         menus: [
             { name: () => t('Data Member'), icon: 'fa-solid fa-users', route: route('member.index') },
+            { name: () => t('CRM'), icon: 'fa-solid fa-diagram-project', route: route('crm.index') },
+        ],
+    },
+    {
+        title: () => t('Report'),
+        icon: 'fa-solid fa-user-tie',
+        collapsible: true,
+        open: ref(false),
+        menus: [
+            { name: () => t('Daily Revenue Report'), icon: 'fa-solid fa-file-lines', route: route('dailyrevenuereport.index') },
+            { name: () => t('List Revenue'), icon: 'fa-solid fa-wallet', route: route('listrevenue.index') },
+            // { name: () => t('Weekly Revenue Report'), icon: 'fa-solid fa-calendar-days', route: route('weeklyrevenuereport.index') },
+            { name: () => t('Service Charge Report'), icon: 'fa-solid fa-receipt', route: route('lapservice.index') },
+            { name: () => t('Survey Pelanggan'), icon: 'fa-solid fa-clipboard-question', route: route('surveypelanggan.index') },
         ],
     },
     {

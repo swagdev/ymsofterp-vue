@@ -30,6 +30,12 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\WarehouseDivisionController;
 use App\Http\Controllers\MenuTypeController;
 use App\Http\Controllers\OutletMapDashboardController;
+use App\Http\Controllers\CrmController;
+use App\Http\Controllers\DailyRevenueReportController;
+use App\Http\Controllers\ListRevenueController;
+use App\Http\Controllers\WeeklyRevenueReportController;
+use App\Http\Controllers\LapServiceController;
+use App\Http\Controllers\SurveyPelangganController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ModifierController;
 use App\Http\Controllers\ModifierOptionController;
@@ -111,6 +117,42 @@ Route::middleware('auth')->group(function () {
     Route::get('/payroll-create', [PayrollController::class, 'create'])->name('payroll.create');
     Route::patch('/payroll-update/{id}', [PayrollController::class, 'update'])->name('payroll.update');
     Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [PayrollController::class, 'generatePDF'])->name('slip-gaji.show');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
+    Route::post('/payroll', [CrmController::class, 'index'])->name('payroll.index');
+    Route::get('/payroll-create', [CrmController::class, 'create'])->name('payroll.create');
+    Route::patch('/payroll-update/{id}', [CrmController::class, 'update'])->name('payroll.update');
+    Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [CrmController::class, 'generatePDF'])->name('slip-gaji.show');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/daily-revenue-report', [DailyRevenueReportController::class, 'index'])->name('dailyrevenuereport.index');
+    Route::post('/daily-revenue-report', [DailyRevenueReportController::class, 'index'])->name('dailyrevenuereport.index');
+    Route::get('/payroll-create', [CrmController::class, 'create'])->name('payroll.create');
+    Route::patch('/payroll-update/{id}', [CrmController::class, 'update'])->name('payroll.update');
+    Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [CrmController::class, 'generatePDF'])->name('slip-gaji.show');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/list-revenue', [ListRevenueController::class, 'index'])->name('listrevenue.index');
+    Route::post('/list-revenue', [ListRevenueController::class, 'index'])->name('listrevenue.index');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/weekly-revenue-report', [WeeklyRevenueReportController::class, 'index'])->name('weeklyrevenuereport.index');
+    Route::post('/weekly-revenue-report', [WeeklyRevenueReportController::class, 'index'])->name('weeklyrevenuereport.index');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/lap-service', [LapServiceController::class, 'index'])->name('lapservice.index');
+    Route::post('/lap-service', [LapServiceController::class, 'index'])->name('lapservice.index');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/survey-pelanggan', [SurveyPelangganController::class, 'index'])->name('surveypelanggan.index');
+    Route::post('/survey-pelanggan', [SurveyPelangganController::class, 'index'])->name('surveypelanggan.index');
 });
 
 Route::middleware('auth')->group(function () {

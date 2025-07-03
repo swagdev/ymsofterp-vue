@@ -91,16 +91,16 @@ function closeModal() {
 
 function onSubmit() {
   // Tampilkan loading
-  // Swal.fire({
-  //   title: 'Load Data...',
-  //   text: 'Mohon tunggu sebentar',
-  //   allowOutsideClick: false,
-  //   allowEscapeKey: false,
-  //   showConfirmButton: false,
-  //   didOpen: () => {
-  //     Swal.showLoading();
-  //   }
-  // });
+  Swal.fire({
+    title: 'Load Data...',
+    text: 'Mohon tunggu sebentar',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    showConfirmButton: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
   form.post(route('payroll.index'), {
     onSuccess: () => {
