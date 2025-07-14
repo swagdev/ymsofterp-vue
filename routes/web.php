@@ -27,6 +27,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\MemberPointController;
 use App\Http\Controllers\WarehouseDivisionController;
 use App\Http\Controllers\MenuTypeController;
 use App\Http\Controllers\OutletMapDashboardController;
@@ -36,6 +37,10 @@ use App\Http\Controllers\ListRevenueController;
 use App\Http\Controllers\WeeklyRevenueReportController;
 use App\Http\Controllers\LapServiceController;
 use App\Http\Controllers\SurveyPelangganController;
+use App\Http\Controllers\SendGiftController;
+use App\Http\Controllers\WebProfileBrandsController;
+use App\Http\Controllers\DataNewsController;
+use App\Http\Controllers\NewsWebProfileController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ModifierController;
 use App\Http\Controllers\ModifierOptionController;
@@ -111,6 +116,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/member-data/{id}/toggle-status', [MemberController::class, 'toggleStatus'])->name('member.toggle-status');
 });
 
+// Data Member Point routes
+Route::middleware('auth')->group(function () {
+    Route::get('/member-point-data', [MemberPointController::class, 'index'])->name('memberpoint.index');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::post('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
@@ -121,18 +131,11 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
-    Route::post('/payroll', [CrmController::class, 'index'])->name('payroll.index');
-    Route::get('/payroll-create', [CrmController::class, 'create'])->name('payroll.create');
-    Route::patch('/payroll-update/{id}', [CrmController::class, 'update'])->name('payroll.update');
-    Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [CrmController::class, 'generatePDF'])->name('slip-gaji.show');
 });
 
 Route::middleware('auth')->group(function () {
     Route::get('/daily-revenue-report', [DailyRevenueReportController::class, 'index'])->name('dailyrevenuereport.index');
     Route::post('/daily-revenue-report', [DailyRevenueReportController::class, 'index'])->name('dailyrevenuereport.index');
-    Route::get('/payroll-create', [CrmController::class, 'create'])->name('payroll.create');
-    Route::patch('/payroll-update/{id}', [CrmController::class, 'update'])->name('payroll.update');
-    Route::get('/payroll/slip-gaji/{userId}/{bulan_tahun}', [CrmController::class, 'generatePDF'])->name('slip-gaji.show');
 });
 
 Route::middleware('auth')->group(function () {
@@ -153,6 +156,45 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/survey-pelanggan', [SurveyPelangganController::class, 'index'])->name('surveypelanggan.index');
     Route::post('/survey-pelanggan', [SurveyPelangganController::class, 'index'])->name('surveypelanggan.index');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/utilities/send_gift', [SendGiftController::class, 'index'])->name('sendgift.index');
+    Route::post('/utilities/send_gift/proses', [SendGiftController::class, 'proses'])->name('sendgiftproses.proses');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/web-profile-brands', [WebProfileBrandsController::class, 'index'])->name('webprofilebrands.index');
+    Route::get('/web-profile-brands-create', [WebProfileBrandsController::class, 'create'])->name('webprofilebrands.create');
+    Route::get('/web-profile-brands-edit/{id}', [WebProfileBrandsController::class, 'edit'])->name('webprofilebrands.edit');
+    Route::post('/web-profile-brands-store', [WebProfileBrandsController::class, 'store'])->name('webprofilebrands.store');
+    Route::post('/web-profile-brands-update/{id}', [WebProfileBrandsController::class, 'update'])->name('webprofilebrands.update');
+    Route::delete('/web-profile-brands-delete/{id}', [WebProfileBrandsController::class, 'destroy'])->name('webprofilebrands.destroy');
+    Route::patch('/web-profile-brands-data/{id}/toggle-status', [WebProfileBrandsController::class, 'toggleStatus'])->name('webprofilebrands.toggle-status');
+    Route::get('/web-profile-brands-list-menu/{id}', [WebProfileBrandsController::class, 'list_menu'])->name('webprofilebrandslistmenu.index');
+    Route::get('/web-profile-brands-list-menu-edit/{id}', [WebProfileBrandsController::class, 'list_menu_edit'])->name('webprofilebrandslistmenu.edit');
+    Route::post('/web-profile-brands-list-menu-store/{id}', [WebProfileBrandsController::class, 'list_menu_store'])->name('webprofilebrandslistmenu.store');
+    Route::post('/web-profile-brands-list-menu-update/{id}', [WebProfileBrandsController::class, 'list_menu_update'])->name('webprofilebrandslistmenu.update');
+    Route::delete('/web-profile-brands-list-menu-delete/{id}', [WebProfileBrandsController::class, 'list_menu_destroy'])->name('webprofilebrandslistmenu.destroy');
+    Route::patch('/web-profile-brands-list-menu-data/{id}/toggle-status', [WebProfileBrandsController::class, 'list_menu_toggleStatus'])->name('webprofilebrandslistmenu.toggle-status');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/data-news', [DataNewsController::class, 'index'])->name('datanews.index');
+    Route::get('/data-news-create', [DataNewsController::class, 'create'])->name('datanews.create');
+    Route::get('/data-news-edit/{id}', [DataNewsController::class, 'edit'])->name('datanews.edit');
+    Route::post('/data-news-store', [DataNewsController::class, 'store'])->name('datanews.store');
+    Route::post('/data-news-update/{id}', [DataNewsController::class, 'update'])->name('datanews.update');
+    Route::delete('/data-news-delete/{id}', [DataNewsController::class, 'destroy'])->name('datanews.destroy');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/news-web-profile', [NewsWebProfileController::class, 'index'])->name('newswebprofile.index');
+    Route::get('/news-web-profile-create', [NewsWebProfileController::class, 'create'])->name('newswebprofile.create');
+    Route::get('/news-web-profile-edit/{id}', [NewsWebProfileController::class, 'edit'])->name('newswebprofile.edit');
+    Route::post('/news-web-profile-store', [NewsWebProfileController::class, 'store'])->name('newswebprofile.store');
+    Route::post('/news-web-profile-update/{id}', [NewsWebProfileController::class, 'update'])->name('newswebprofile.update');
+    Route::delete('/news-web-profile-delete/{id}', [NewsWebProfileController::class, 'destroy'])->name('newswebprofile.destroy');
 });
 
 Route::middleware('auth')->group(function () {

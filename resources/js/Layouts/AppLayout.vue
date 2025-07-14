@@ -40,6 +40,7 @@ const menuGroups = [
         open: ref(false),
         menus: [
             { name: () => t('Data Member'), icon: 'fa-solid fa-users', route: route('member.index') },
+            { name: () => t('Data Member Point'), icon: 'fa-solid fas fa-user-tag', route: route('memberpoint.index') },
             { name: () => t('CRM'), icon: 'fa-solid fa-diagram-project', route: route('crm.index') },
         ],
     },
@@ -58,7 +59,7 @@ const menuGroups = [
     },
     {
         title: () => t('sidebar.maintenance'),
-        icon: 'fa-solid fa-screwdriver-wrench',
+        icon: 'fa-solid fa-cogs',
         collapsible: true,
         open: ref(false),
         menus: [
@@ -66,6 +67,28 @@ const menuGroups = [
             { name: () => t('sidebar.maintenance_order'), icon: 'fa-solid fa-clipboard-check', route: '/maintenance-order' },
             { name: () => 'Kalender Jadwal', icon: 'fa-solid fa-calendar-alt', route: '/maintenance-order/schedule-calendar' },
             { name: () => 'MT PO Payment', icon: 'fa-solid fa-money-bill-wave', route: route('mt-po-payment.index') },
+        ],
+    },
+    {
+        title: () => t('Ultilities'),
+        icon: 'fa-solid fa-screwdriver-wrench',
+        collapsible: true,
+        open: ref(false),
+        menus: [
+            { name: () => t('Send Gift'), icon: 'fa-solid fa-gift', route: route('sendgift.index') },
+        ],
+    },
+    {
+        title: () => t('Web Profile'),
+        icon: 'fa-solid fa-cube',
+        collapsible: true,
+        open: ref(false),
+        menus: [
+            { name: () => t('Data Member'), icon: 'fa-solid fa-users', route: route('member.index') },
+            { name: () => t('Brands'), icon: 'fa-solid fas fa-flag', route: route('webprofilebrands.index') },
+            { name: () => t('CRM'), icon: 'fa-solid fa-diagram-project', route: route('crm.index') },
+            { name: () => t('Data News'), icon: 'fa-solid fa-newspaper', route: route('datanews.index') },
+            { name: () => t('News Web Profile'), icon: 'fa-solid fa-newspaper', route: route('newswebprofile.index') },
         ],
     },
     {

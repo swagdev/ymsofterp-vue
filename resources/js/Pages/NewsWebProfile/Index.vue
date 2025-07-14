@@ -5,8 +5,10 @@ import { debounce } from 'lodash';
 import Swal from 'sweetalert2';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Switch } from '@headlessui/vue';
-import PositionFormModal from './PositionFormModal.vue';
+import NewsWebProfileFormModal from './NewsWebProfileFormModal.vue';
 import { se } from 'date-fns/locale';
+import { method } from 'lodash';
+import { sub } from 'date-fns';
 
 const props = defineProps({
   d: Object, // { data, links, meta }
@@ -26,6 +28,7 @@ const selectedJabatans = ref(null); // untuk form modal
 const selectdDivisis = ref(null);
 const selectedSubDivisis = ref(null); // untuk form modal
 const selectedLevels = ref(null); // untuk form modal
+const openDropdown = ref(null)
 
 const debouncedSearch = debounce(() => {
   router.get('/position-data', { search: search.value, status: showInactive.value ? 'inactive' : 'active' }, { preserveState: true, replace: true });
@@ -43,6 +46,10 @@ function goToPage(url) {
   if (url) router.visit(url, { preserveState: true, replace: true });
 }
 
+function toggle(index) {
+  openDropdown.value = openDropdown.value === index ? null : index
+}
+
 function openCreate() {
   modalMode.value = 'create';
   selectedDs.value = null;
@@ -54,7 +61,7 @@ function openCreate() {
   // router.visit(route('position.create'));
 }
 
-function openEdit(ds) {
+function open_edit(ds) {
   // router.visit(route('position.edit', d.id));
   modalMode.value = 'edit';
   selectedDs.value = ds;
@@ -63,6 +70,10 @@ function openEdit(ds) {
   selectedSubDivisis.value = props.subDivisis; // set sub divisi yang dipilih
   selectedLevels.value = props.levels; // set level yang dipilih
   showModal.value = true;
+}
+
+function open_list_menu(ds) {
+  router.visit(route('webprofilebrandslistmenu.index', ds.id));
 }
 
 async function hapus(customer) {
@@ -97,6 +108,10 @@ function toggleStatus(customer) {
     onSuccess: reload,
   });
 }
+
+function detailLimit(value) {
+  return value.substring(0, 210) + '...';
+}
 </script>
 
 <template>
@@ -104,13 +119,13 @@ function toggleStatus(customer) {
     <div class="max-w-7xl w-full mx-auto py-8 px-2">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <i class="fa-solid fa-users text-blue-500"></i> Data Jabatan
+          <i class="fa-solid fa-users text-blue-500"></i> News Web Profile
         </h1>
         <button @click="openCreate" class="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-2xl transition-all font-semibold">
-          + Buat Jabatan Baru
+          + Buat News Web Profile Baru
         </button>
       </div>
-      <div class="flex items-center gap-3 mb-4">
+      <!-- <div class="flex items-center gap-3 mb-4">
         <Switch
           v-model="showInactive"
           :class="showInactive ? 'bg-blue-600' : 'bg-gray-200'"
@@ -122,13 +137,13 @@ function toggleStatus(customer) {
           />
         </Switch>
         <span class="ml-2 text-sm text-gray-700">Tampilkan Inactive</span>
-      </div>
+      </div> -->
       <div class="mb-4">
         <input
           v-model="search"
           @input="onSearchInput"
           type="text"
-          placeholder="Cari nama/kode/region..."
+          placeholder="Cari Judul..."
           class="w-full px-4 py-2 rounded-xl border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
         />
       </div>
@@ -137,29 +152,36 @@ function toggleStatus(customer) {
           <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider rounded-tl-2xl">NO</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">NAMA JABATAN</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">NAMA ATASAN</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">DIVISI</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">SUB DIVISI</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">LEVEL</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">STANDARD QA</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">STATUS</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider rounded-tr-2xl">AKSI</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Judul</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Content</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Thumbnail</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Image</th>
+              <th class="px-6 py-3 min-w-[120px] text-left text-xs font-bold text-blue-700 uppercase tracking-wider rounded-tr-2xl">Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="d.data.length === 0">
-              <td colspan="6" class="text-center py-10 text-gray-400">Tidak ada data customer.</td>
+              <td colspan="6" class="text-center py-10 text-gray-400">Tidak ada data News.</td>
             </tr>
             <tr v-for="(ds, key) in d.data" :key="ds.id" class="hover:bg-blue-50 transition shadow-sm">
               <td class="px-6 py-3 font-semibold">{{ (d.current_page - 1) * d.per_page + key + 1 }}</td>
-              <td class="px-6 py-3">{{ ds.nama_jabatan }}</td>
-              <td class="px-6 py-3">{{ ds.nama_atasan_jabatan }}</td>
-              <td class="px-6 py-3">{{ ds.nama_divisi }}</td>
-              <td class="px-6 py-3">{{ ds.nama_sub_divisi }}</td>
-              <td class="px-6 py-3">{{ ds.nama_level }}</td>
-              <td class="px-6 py-3">{{ ds.standard_qa }}</td>
+              <td class="px-6 py-3" v-html="ds.title"></td>
+              <td class="px-6 py-3" v-html="detailLimit(ds.content)"></td>
               <td class="px-6 py-3">
+                <img 
+                  :src="`https://justusmember.co.id/assets/justusku_web_profile/images/${ds.thumbnail}`" 
+                  alt="Brand Image" 
+                  class="w-96 h-40 object-cover rounded-xl shadow border hover:scale-105 transition duration-200 ease-in-out"
+                />
+              </td>
+              <td class="px-6 py-3">
+                <img 
+                  :src="`https://justusmember.co.id/assets/justusku_web_profile/images/${ds.image}`" 
+                  alt="Brand Image" 
+                  class="w-96 h-40 object-cover rounded-xl shadow border hover:scale-105 transition duration-200 ease-in-out"
+                />
+              </td>
+              <!-- <td class="px-6 py-3">
                 <button
                   :class="ds.status === 'N' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'"
                   class="px-2 py-1 rounded-full text-xs font-semibold shadow hover:opacity-80 transition"
@@ -167,9 +189,32 @@ function toggleStatus(customer) {
                 >
                   {{ ds.status === 'N' ? 'inactive' : 'active' }}
                 </button>
-              </td>
+              </td> -->
               <td class="px-6 py-3">
-                <div class="flex gap-2">
+                <div class="relative inline-block min-w-[120px] text-left">
+                  <button @click="toggle((d.current_page - 1) * d.per_page + key + 1)"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+                    Pilih Aksi
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+
+                  <!-- Dropdown menu -->
+                  <div v-if="openDropdown === (d.current_page - 1) * d.per_page + key + 1"
+                    class="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50">
+                    <ul class="text-sm text-gray-700">
+                      <li>
+                        <button @click="open_edit(ds)" class="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
+                      </li>
+                      <!-- <li>
+                        <button @click="open_delete(ds)" class="block w-full text-left px-4 py-2 hover:bg-gray-100">Delete</button>
+                      </li> -->
+                    </ul>
+                  </div>
+                </div>
+                <!-- <div class="flex gap-2">
                   <button @click="openEdit(ds)" class="inline-flex items-center btn btn-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 rounded px-2 py-1 font-semibold transition">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m-2 2h6a2 2 0 002-2v-6a2 2 0 00-2-2H7a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
                     Edit
@@ -178,7 +223,7 @@ function toggleStatus(customer) {
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     Hapus
                   </button>
-                </div>
+                </div> -->
               </td>
             </tr>
           </tbody>
@@ -199,7 +244,7 @@ function toggleStatus(customer) {
           ]"
         />
       </div>
-      <PositionFormModal
+      <NewsWebProfileFormModal
         :show="showModal"
         :mode="modalMode"
         :ds="selectedDs"

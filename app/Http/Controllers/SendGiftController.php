@@ -17,13 +17,13 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-class CrmController extends Controller
+class SendGiftController extends Controller
 {
     public function index(Request $request)
     {
         $jabatans = Jabatan::where('status', 'A')->orderBy('nama_jabatan', 'asc')->get();
         $divisis = Divisi::whereNull('deleted_at')->orderBy('nama_divisi', 'asc')->get();
-        $outlets = Outlet::where('status', 'A')->orderBy('nama_outlet', 'asc')->get();
+        $outlets = DB::connection('mysql_third')->table('tbldataoutlet')->where('aktif', 'True')->get();
 
         $bulan_tahun = $request->bulan_tahun;
         if (Str::contains($bulan_tahun, '-')) {
@@ -58,189 +58,261 @@ class CrmController extends Controller
 
             $d = [];
 
-            $d['getTotalTransaksiInMounth'] = DB::connection('mysql_secondary')->table('point')
-                    ->where('type', '1')
-                    ->where('cabang_id', '!=', '0')
-                    ->whereYear('created_at', $tahun_saat_ini)
-                    ->whereMonth('created_at', $bulan_saat_ini)
-                    ->sum('jml_trans');
-
-            $d['getTotalNewMemberMounth'] = DB::connection('mysql_secondary')->table('costumers')
-                    ->whereYear('created_at', $tahun_saat_ini)
-                    ->whereMonth('created_at', $bulan_saat_ini)
-                    ->count();
-
-            $d['getTotalPointInMounth'] = DB::connection('mysql_secondary')->table('point')
-                    ->where('type', '1')
-                    ->where('cabang_id', '!=', '0')
-                    ->whereYear('created_at', $tahun_saat_ini)
-                    ->whereMonth('created_at', $bulan_saat_ini)
-                    ->sum('point');
-
-            $d['getTotalRedeemInMounth'] = DB::connection('mysql_secondary')->table('point')
-                    ->where('type', '2')
-                    ->where('cabang_id', '!=', '0')
-                    ->whereYear('created_at', $tahun_saat_ini)
-                    ->whereMonth('created_at', $bulan_saat_ini)
-                    ->sum('point');
-
-            $d['getTotalRedeemInMounth'] = DB::connection('mysql_secondary')->table('point')
-                    ->where('type', '2')
-                    ->where('cabang_id', '!=', '0')
-                    ->whereYear('created_at', $tahun_saat_ini)
-                    ->whereMonth('created_at', $bulan_saat_ini)
-                    ->sum('point');
-            
-
-            $d['getTotalMember'] = DB::connection('mysql_secondary')->table('costumers')
-                                    ->count();
-
-            $d['getTotalMemberBandung'] = DB::connection('mysql_secondary')->query()
-                                    ->fromSub(
-                                        DB::connection('mysql_secondary')->table('costumers')
-                                            ->leftJoin('point', 'point.costumer_id', '=', 'costumers.id')
-                                            ->whereNull('point.id')
-                                            ->select('costumers.id')
-                                            ->union(
-                                                DB::connection('mysql_secondary')->table('costumers')
-                                                    ->join('point', 'point.costumer_id', '=', 'costumers.id')
-                                                    ->join('cabangs', 'cabangs.id', '=', 'point.cabang_id')
-                                                    ->whereIn('point.id', function ($q) {
-                                                        $q->select(DB::connection('mysql_secondary')->raw('MIN(id)'))
-                                                        ->from('point')
-                                                        ->groupBy('costumer_id');
-                                                    })
-                                                    ->whereNotIn('cabangs.kode_cabang', ['SH011', 'SH012', 'SH013', 'SH014', 'SH015'])
-                                                    ->select('costumers.id')
-                                            ),
-                                        'full_set'
-                                    )
-                                    ->count();
-
-            $d['getTotalMemberJakarta'] = DB::connection('mysql_secondary')->query()
-                                            ->fromSub(
-                                                DB::connection('mysql_secondary')->table('costumers')
-                                                    ->join('point', 'point.costumer_id', '=', 'costumers.id')
-                                                    ->join('cabangs', 'cabangs.id', '=', 'point.cabang_id')
-                                                    ->whereIn('point.id', function ($q) {
-                                                        $q->select(DB::connection('mysql_secondary')->raw('MIN(p2.id)'))
-                                                        ->from('point as p2')
-                                                        ->groupBy('p2.costumer_id');
-                                                    })
-                                                    ->whereIn('cabangs.kode_cabang', ['SH011', 'SH012', 'SH013', 'SH014', 'SH015'])
-                                                    ->select('costumers.id'),
-                                                'first_joined'
-                                            )
-                                            ->count();
-
-            $d['getTotalActiveMember'] = DB::connection('mysql_secondary')->table('costumers')
-                                            ->where('tanggal_aktif', '>', now())
-                                            ->count();
-
-            $d['getTotalActiveMemberTransactions'] =  DB::connection('mysql_secondary')->table('costumers')
-                                            ->join('point', 'costumers.id', '=', 'point.costumer_id')
-                                            ->where('costumers.tanggal_aktif', '>', now())
-                                            ->where('point.created_at', '>=', now()->subMonth())
-                                            ->distinct()
-                                            ->count('costumers.id');
-
-            
-            $newMonthlyDataMember = DB::connection('mysql_secondary')->table('costumers')
-                                            ->selectRaw('MONTH(created_at) as month, COUNT(*) as total')
-                                            ->whereYear('created_at', $tahun_saat_ini)
-                                            ->groupBy(DB::connection('mysql_secondary')->raw('MONTH(created_at)'))
-                                            ->orderBy('month')
-                                            ->get();
-
-            $d['getNewMemberGrafik'] = collect(range(1, $bulan_saat_ini))->map(function ($m) use ($newMonthlyDataMember) {
-                                            $found = $newMonthlyDataMember->firstWhere('month', $m);
-                                            return [
-                                                'month' => Carbon::create()->month($m)->format('M'),
-                                                'total' => $found ? $found->total : 0,
-                                            ];
-                                        });
-
-            $lastMonthDataMember = DB::connection('mysql_secondary')->table('costumers')
-                                            ->selectRaw('MONTH(created_at) as month, COUNT(*) as total')
-                                            ->whereYear('created_at', $tahun_lalu)
-                                            ->groupBy(DB::connection('mysql_secondary')->raw('MONTH(created_at)'))
-                                            ->orderBy('month')
-                                            ->get();
-
-            $d['getLastYearMemberGrafik'] = collect(range(1, 12))->map(function ($m) use ($lastMonthDataMember) {
-                                            $found = $lastMonthDataMember->firstWhere('month', $m);
-                                            return [
-                                                'month' => Carbon::create()->month($m)->format('M'),
-                                                'total' => $found ? $found->total : 0,
-                                            ];
-                                        });
-                       
-            $monthTransaksiGrafik = DB::connection('mysql_secondary')->table('point')
-                                            ->selectRaw("MONTH(created_at) as month,
-                                                        SUM(CASE WHEN type = 1 THEN jml_trans ELSE 0 END) as transaksi,
-                                                        SUM(CASE WHEN type = 1 THEN point ELSE 0 END) as topup,
-                                                        SUM(CASE WHEN type = 2 THEN point ELSE 0 END) as redeem")
-                                            ->whereYear('created_at', $tahun_saat_ini)
-                                            ->groupByRaw('MONTH(created_at)')
-                                            ->orderByRaw('MONTH(created_at)')
-                                            ->get();
-
-                                        // normalisasi ke 12 bulan
-             $d['monthTransaksiGrafik'] = collect(range(1, $bulan_saat_ini))->map(function ($bulan) use ($monthTransaksiGrafik) {
-                                            $found = $monthTransaksiGrafik->firstWhere('month', $bulan);
-                                            return [
-                                                'month' => \Carbon\Carbon::create()->month($bulan)->format('M'),
-                                                'transaksi' => $found->transaksi ?? 0,
-                                                'topup' => $found->topup ?? 0,
-                                                'redeem' => $found->redeem ?? 0,
-                                            ];
-                                        });
-
-            $lastYearTransaksiGrafik = DB::connection('mysql_secondary')->table('point')
-                                            ->selectRaw("MONTH(created_at) as month,
-                                                        SUM(CASE WHEN type = 1 THEN jml_trans ELSE 0 END) as transaksi,
-                                                        SUM(CASE WHEN type = 1 THEN point ELSE 0 END) as topup,
-                                                        SUM(CASE WHEN type = 2 THEN point ELSE 0 END) as redeem")
-                                            ->whereYear('created_at', $tahun_lalu)
-                                            ->groupByRaw('MONTH(created_at)')
-                                            ->orderByRaw('MONTH(created_at)')
-                                            ->get();
-
-                                        // normalisasi ke 12 bulan
-            $d['lastYearTransaksiGrafik'] = collect(range(1, 12))->map(function ($bulan) use ($lastYearTransaksiGrafik) {
-                                            $found = $lastYearTransaksiGrafik->firstWhere('month', $bulan);
-                                            return [
-                                                'month' => \Carbon\Carbon::create()->month($bulan)->format('M'),
-                                                'transaksi' => $found->transaksi ?? 0,
-                                                'topup' => $found->topup ?? 0,
-                                                'redeem' => $found->redeem ?? 0,
-                                            ];
-                                        });
-
-            $d['getTabelPointInMonth'] = DB::connection('mysql_secondary')
-                                                ->table('point')
-                                                ->join('cabangs', 'cabangs.id', '=', 'point.cabang_id')
+            $d['getListRevenue'] = DB::connection('mysql_third')->table('TblCafeOrderOutlet')
+                                                ->join('tbldataoutlet', 'TblCafeOrderOutlet.KodeOutlet', '=', 'tbldataoutlet.kode_outlet')
                                                 ->select(
-                                                    'cabangs.name',
-                                                    DB::raw("SUM(CASE WHEN point.type = 1 THEN point.jml_trans ELSE 0 END) as transaksi"),
-                                                    DB::raw("SUM(CASE WHEN point.type = 1 THEN point.point ELSE 0 END) as topup"),
-                                                    DB::raw("SUM(CASE WHEN point.type = 2 THEN point.point ELSE 0 END) as redeem"),
-                                                    DB::raw("SUM(CASE WHEN point.type = 1 THEN point.point ELSE 0 END) - SUM(CASE WHEN point.type IN (0, 2) THEN point.point ELSE 0 END) AS saldo")
+                                                    'tbldataoutlet.nama_outlet',
+                                                    DB::raw('SUM(TblCafeOrderOutlet.Total) AS Total'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.Disc) AS Disc'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.DPP) AS DPP'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.PPN) AS PPN'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.Service) AS Service'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.GrandTotal) AS GrandTotal'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.JumlahPax) AS Cover'),
+                                                    DB::raw('SUM(GrandTotal)/SUM(JumlahPax) AS AC'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.CommFee) AS Commfee'),
+                                                    DB::raw('SUM(TblCafeOrderOutlet.CashbackMember) AS Redeem')
                                                 )
-                                                ->where('point.cabang_id', '!=', 0)
-                                                ->whereYear('point.created_at', $tahun_saat_ini)
-                                                ->whereMonth('point.created_at', $bulan_saat_ini)
-                                                ->groupBy('cabangs.name')
-                                                ->orderBy('transaksi', 'desc') // opsional: tampilkan outlet transaksi tertinggi dulu
+                                                ->whereMonth('Tanggal', $bulan)
+                                                ->whereYear('Tanggal', $tahun)
+                                                ->groupBy('tbldataoutlet.nama_outlet')
                                                 ->get();
+
+            $d['getListRevenueTotal'] = collect($d['getListRevenue'])->reduce(function ($carry, $item) {
+                $carry['Total'] = ($carry['Total'] ?? 0) + $item->Total;
+                $carry['Disc'] = ($carry['Disc'] ?? 0) + $item->Disc;
+                $carry['DPP'] = ($carry['DPP'] ?? 0) + $item->DPP;
+                $carry['PPN'] = ($carry['PPN'] ?? 0) + $item->PPN;
+                $carry['Service'] = ($carry['Service'] ?? 0) + $item->Service;
+                $carry['GrandTotal'] = ($carry['GrandTotal'] ?? 0) + $item->GrandTotal;
+                $carry['Cover'] = ($carry['Cover'] ?? 0) + $item->Cover;
+                $carry['Commfee'] = ($carry['Commfee'] ?? 0) + $item->Commfee;
+                $carry['Redeem'] = ($carry['Redeem'] ?? 0) + $item->Redeem;
+
+                $carry['AC'] = $carry['Cover'] > 0
+                    ? round($carry['GrandTotal'] / $carry['Cover'])
+                    : 0;
+
+                return $carry;
+            }, []);
+
+        $d['getLapService'] = DB::connection('mysql_third')->table('vSumService')
+                            ->where('Bulan', $bulan)
+                            ->where('Tahun', $tahun)
+                            ->orderBy('nama_outlet', 'asc')
+                            ->get();
                                                 
-        return Inertia::render('Crm/Index', [
+        return Inertia::render('SendGift/Index', [
             'd' => $d,
+            'outlets' => $outlets,
             'filters' => [
                 'search' => $request->search,
             ],
         ]);
     
+    }
+
+    public function dailyAutoPushNotifInbox()
+    {
+        $results = DB::table('pushnotification_target as pt')
+            ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
+            ->select('pt.id', 'pt.token', 'pt.created_at', 'pt.tanggal_lahir', 'pn.title', 'pn.body', 'pn.photo')
+            ->whereDate('pt.created_at', '=', Carbon::now()->toDateString())
+            ->where('pt.token', '!=', '')
+            ->where('pt.token', '!=', null)
+            ->where('pt.status_send', '=', '0')
+            ->where('pt.program_promo_claimed', '=', '0')
+            ->orderBy('pt.created_at', 'ASC')
+            ->limit(100)
+            ->get();
+        $message = "";
+        foreach ($results as $row) {
+            $token = $row->token;
+            $title = $row->title;
+            $body = $row->body;
+            // $token
+            $message = $this->sendPushNotification($token, $title, $body);
+            //dd($token, $title, $body, $message);
+            DB::table('pushnotification_target')
+                ->where('id', $row->id)
+                ->update(['status_send' => '1']);
+        }
+    }
+
+    function sendPushNotification($targetToken, $title, $body)
+    {
+        $url = 'https://ymsoft-erp.justusku.co.id/laravel-firebase-app/public/api/send-fcm';
+        $data = [
+            'title' => $title,
+            'body' => $body,
+            'target_token' => $targetToken
+        ];
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/x-www-form-urlencoded'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        $response = curl_exec($ch);
+        $message = curl_errno($ch) ? 'cURL Error: ' . curl_error($ch) : 'Response: ' . $response;
+        curl_close($ch);
+        return $message;
+    }
+
+    public function singlePushNotifByTarget($title, $body, $gambar, $targetString, $photo, $program_promo_status, $program_promo_berlaku_hingga)
+    {
+        $emails = explode(",", $targetString);
+        $id_pushnotification = DB::table('pushnotification')->insertGetId([
+            'status_send' => '1',
+            'title' => $title,
+            'body' => $body,
+            'photo' => $photo,
+            'target' => $targetString,
+        ]);
+        $pushTargets = [];
+        foreach ($emails as $email) {
+            $email = trim($email);
+            $token = DB::table('costumers')
+                ->where('email', $email)
+                ->value('firebase_token_device') ?? "";
+
+            $pushTargets[] = [
+                'email_member' => $email,
+                'gambar' => $gambar,
+                'token' => $token,
+                'id_pushnotification' => $id_pushnotification,
+                'status_read' => '0',
+                'status_send' => '0',
+                'program_promo_status' => $program_promo_status,
+                'program_promo_claimed' => ($program_promo_status == '1') ? '0' : '1',
+                'program_promo_berlaku_hingga' => $program_promo_berlaku_hingga,
+            ];
+            if (count($pushTargets) >= 500) {
+                DB::table('pushnotification_target')->insert($pushTargets);
+                $pushTargets = [];
+            }
+        }
+        if (!empty($pushTargets)) {
+            DB::table('pushnotification_target')->insert($pushTargets);
+        }
+        DB::table('pushnotification_target')
+            ->where(function ($query) {
+                $query->where('qrcode', '')
+                    ->orWhereNull('qrcode');
+            })
+            ->update([
+                'qrcode' => DB::raw("CONCAT(id, DATE_FORMAT(created_at, '%y%m%d%H%i%s'))")
+            ]);
+    }
+
+    public function singlePushNotifByAll($title, $body, $gambar, $targetString, $photo, $program_promo_status, $program_promo_berlaku_hingga)
+    {
+        $threeMonthsAgo = Carbon::now()->subMonths(12);
+        $now = Carbon::now();
+
+        $customers = DB::table('costumers')
+                ->select(
+                    'costumers.id',
+                    'costumers.name',
+                    'costumers.email',
+                    'costumers.telepon',
+                    'costumers.tanggal_lahir',
+                    'costumers.firebase_token_device'
+                )
+                ->leftJoin('point', 'costumers.id', '=', 'point.costumer_id')
+                ->where('costumers.status_aktif', '1')
+                ->where('costumers.firebase_token_device', '!=', '')
+                ->groupBy('costumers.id', 'costumers.name', 'costumers.email', 'costumers.telepon', 'costumers.tanggal_lahir', 'costumers.firebase_token_device')
+                ->get();
+
+        //echo count($customers); die();
+
+        $id_pushnotification = DB::table('pushnotification')->insertGetId([
+            'status_send' => '1',
+            'title' => $title,
+            'body' => $body,
+            'photo' => $photo,
+            'target' => $targetString,
+        ]);
+
+        $pushTargets = [];
+        foreach ($customers as $customer) {
+            $pushTargets[] = [
+                'email_member' => $customer->email,
+                'gambar' => $gambar,
+                'token' => $customer->firebase_token_device,
+                'id_pushnotification' => $id_pushnotification,
+                'status_read' => '0',
+                'status_send' => '1',
+                'program_promo_status' => $program_promo_status,
+                'program_promo_claimed' => ($program_promo_status == '1') ? '0' : '1',
+                'program_promo_berlaku_hingga' => $program_promo_berlaku_hingga,
+            ];
+            if (count($pushTargets) >= 500) {
+                DB::table('pushnotification_target')->insert($pushTargets);
+                $pushTargets = [];
+            }
+        }
+        if (!empty($pushTargets)) {
+            DB::table('pushnotification_target')->insert($pushTargets);
+        }
+        // buat qrcode 14 digit lebih
+        DB::table('pushnotification_target')
+            ->where(function ($query) {
+                $query->where('qrcode', '')
+                    ->orWhereNull('qrcode');
+            })
+            ->update([
+                'qrcode' => DB::raw("CONCAT(id, DATE_FORMAT(created_at, '%y%m%d%H%i%s'))")
+            ]);
+    }
+
+    public function proses(Request $request)
+    {
+        $title = $request->input('title');
+        $body = $request->input('body');
+        $gambar = $request->input('gambar');
+        $targetString = $request->input('target');
+        $photo = $request->input('photo') ?? "photo_birthday_promo.png";
+        $program_promo_status = $request->input('is_promo');
+        $program_promo_berlaku_hingga = $request->input('berlaku_hingga');
+
+        // $file = $request->file('gambar');
+
+        // $filename = str_replace(' ', '-', $file->getClientOriginalName());
+        // $randomName = Str::random(7);
+
+        // $path = $file->storeAs('uploads', $randomName.'_'.$filename, 'public');
+
+        // $fullPath = '/storage/' . $path;
+
+
+        $file = $request->file('gambar');
+        $randomName = Str::random(10);
+        $fileName = "";
+        if (isset($file)) {
+        $fileName = $randomName . '_' . str_replace(" ", "_", strtolower($file->getClientOriginalName()));
+        $file->move(public_path('assets/gift/images'), $fileName);
+        // $this->zeroCrop(public_path('assets/gift/images/' . $fileName));
+        }
+
+        if ($targetString != "all") {
+            $this->singlePushNotifByTarget($title, $body, $gambar, $targetString, $photo, $program_promo_status, $program_promo_berlaku_hingga);
+        } else {
+            $this->singlePushNotifByAll($title, $body, $gambar, $targetString, $photo, $program_promo_status, $program_promo_berlaku_hingga);
+        }
+
+        return redirect()->back()->with('success', 'Notifikasi berhasil dikirim!');
+
+        // $fcm = new \App\Http\Controllers\FcmController();
+
+        // $fcm->kirimNotifikasi([
+        //     'title' => $title,
+        //     'body' => $body,
+        //     'target_token' => $targetToken
+        // ]);
+
     }
 
     public function create()
