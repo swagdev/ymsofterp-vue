@@ -108,7 +108,7 @@ function toggleStatus(customer) {
           v-model="search"
           @input="onSearchInput"
           type="text"
-          placeholder="Cari nama/kode/region..."
+          placeholder="Cari nama/email/no hp/outlet..."
           class="w-full px-4 py-2 rounded-xl border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
         />
       </div>
@@ -120,6 +120,7 @@ function toggleStatus(customer) {
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Nama</th>
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">No Hp</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Outlet</th>
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Status</th>
               <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider rounded-tr-2xl">Aksi</th>
             </tr>
@@ -133,6 +134,7 @@ function toggleStatus(customer) {
               <td class="px-6 py-3">{{ customer.nama_lengkap }}</td>
               <td class="px-6 py-3">{{ customer.email }}</td>
               <td class="px-6 py-3">{{ customer.no_hp }}</td>
+              <td class="px-6 py-3">{{ customer.nama_outlet }}</td>
               <td class="px-6 py-3">
                 <button
                   :class="customer.status === 'B' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'"

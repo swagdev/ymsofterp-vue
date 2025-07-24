@@ -159,7 +159,7 @@ class ApiFlutterController extends Controller
     {
         $email = $request->email;
 
-        $result = DB::table('pushnotification_target as pt')
+        $result = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
             ->join('pushnotification as p', 'pt.id_pushnotification', '=', 'p.id')
             ->select('pt.id as ptid', 'pt.*', 'p.*')
             ->where('pt.email_member', $email)
@@ -170,7 +170,7 @@ class ApiFlutterController extends Controller
             })
             ->orderBy('pt.id', 'ASC')
             ->first();
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->where('id', $result->ptid)
             ->update(['status_read' => '1']);
 
@@ -181,7 +181,7 @@ class ApiFlutterController extends Controller
     {
         $id_costumers = $request->id_costumers;
         $token = $request->token;
-        DB::table('costumers')
+        DB::connection('mysql_secondary')->table('costumers')
             ->where('id', $id_costumers)
             ->update(['firebase_token_device' => $token]);
     }
@@ -191,7 +191,7 @@ class ApiFlutterController extends Controller
         $password = $request->password;
 
         // Cek apakah ada user dengan email dan password yang cocok
-        $adminCashier = DB::table('admin_cashier')
+        $adminCashier = DB::connection('mysql_secondary')->table('admin_cashier')
             ->where('user', $email)
             ->where('password', $password)
             ->first();
@@ -284,15 +284,15 @@ class ApiFlutterController extends Controller
             $tanggalRegister     = date('Y-m-d');
             $device             = $request->device;
 
-            $existsExclusiveMemberGenerate = DB::table('exclusive_member')
+            $existsExclusiveMemberGenerate = DB::connection('mysql_secondary')->table('exclusive_member')
                 ->where('full_id', $exclusive_member)
                 ->exists();
 
-            $existsExclusiveMemberCostumers = DB::table('costumers')
+            $existsExclusiveMemberCostumers = DB::connection('mysql_secondary')->table('costumers')
                 ->where('exclusive_member', $exclusive_member)
                 ->exists();
 
-            $existingCustomer = DB::table('costumers')
+            $existingCustomer = DB::connection('mysql_secondary')->table('costumers')
                 ->where('email', $email)
                 ->orWhere('telepon', $telepon)
                 ->first();
@@ -342,7 +342,7 @@ class ApiFlutterController extends Controller
                     'device' => $device,
                     'status_block' => '1',
                 ];
-                $insertedId = DB::table('costumers')->insertGetId($data_costumers);
+                $insertedId = DB::connection('mysql_secondary')->table('costumers')->insertGetId($data_costumers);
 
                 $newid = "U" . str_pad($insertedId, 4, "0", STR_PAD_LEFT);
                 $barcode = 'https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=' . $newid . '&choe=UTF-8';
@@ -350,7 +350,7 @@ class ApiFlutterController extends Controller
                     'costumers_id' => $newid,
                     'barcode' => $barcode,
                 ];
-                DB::table('costumers')->where('id', $insertedId)->update($data_costumers_update);
+                DB::connection('mysql_secondary')->table('costumers')->where('id', $insertedId)->update($data_costumers_update);
 
                 DB::commit();
 
@@ -372,7 +372,7 @@ class ApiFlutterController extends Controller
 
         $id_inbox = hexdec($qrcode);
 
-        $customer = DB::table('pushnotification_target')
+        $customer = DB::connection('mysql_secondary')->table('pushnotification_target')
             ->select(DB::raw("CASE 
             WHEN EXISTS (SELECT 1 FROM `point` WHERE no_bill = '{$nobill}') 
             THEN 'ada' 
@@ -385,7 +385,7 @@ class ApiFlutterController extends Controller
             ->limit(1)
             ->first();
 
-        // $customer = DB::table('pushnotification_target')
+        // $customer = DB::connection('mysql_secondary')->table('pushnotification_target')
         //     ->select(DB::raw("CASE 
         //     WHEN EXISTS (SELECT 1 FROM `point` WHERE no_bill = '$nobill') 
         //     THEN 'ada' 
@@ -399,7 +399,7 @@ class ApiFlutterController extends Controller
         //     ->frist();
 
         if (!$customer) {
-            $customer = DB::table('pushnotification_target as pt')
+            $customer = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
                 ->select(DB::raw("CASE 
                     WHEN EXISTS (SELECT 1 FROM `point` WHERE no_bill = '{$nobill}') 
                     THEN 'ada'
@@ -431,26 +431,26 @@ class ApiFlutterController extends Controller
         }
 
         // Mencoba untuk memperbarui program promo berdasarkan qrcode terlebih dahulu
-        $updated = DB::table('pushnotification_target')
+        $updated = DB::connection('mysql_secondary')->table('pushnotification_target')
             ->where('qrcode', $qrcode)
             ->update(['program_promo_claimed' => '1']);
 
         // Jika tidak ada yang ter-update, coba dengan id_inbox
         if (!$updated) {
-            $updated = DB::table('pushnotification_target')
+            $updated = DB::connection('mysql_secondary')->table('pushnotification_target')
                 ->where('id', $id_inbox)
                 ->update(['program_promo_claimed' => '1']);
         }
 
         // Ambil ID dari pushnotification_target yang telah di-update
         if ($updated) {
-            $targetId = DB::table('pushnotification_target')
+            $targetId = DB::connection('mysql_secondary')->table('pushnotification_target')
                 ->where('qrcode', $qrcode)
                 ->orWhere('id', $id_inbox)
                 ->value('id');
 
             // Menyimpan data klaim program promo
-            DB::table('claim_program_promo')->insert([
+            DB::connection('mysql_secondary')->table('claim_program_promo')->insert([
                 'id_pushnotification_target' => $targetId, // Ganti dengan ID yang baru diambil
                 'photo_ktp' => $imageName,
                 'no_bill' => $nobill,
@@ -465,7 +465,7 @@ class ApiFlutterController extends Controller
     {
         //dd($request->all());
         $email = $request->email;
-        $customers = DB::table('costumers')
+        $customers = DB::connection('mysql_secondary')->table('costumers')
             ->where('email', $email)
             ->orWhere('telepon', $email)
             ->first();
@@ -478,7 +478,7 @@ class ApiFlutterController extends Controller
             'android_password' => md5($newPassword),
             'hint' => $newPassword,
         ];
-        DB::table('costumers')->where('id', $idCustomer)->update($data_update_costumers);
+        DB::connection('mysql_secondary')->table('costumers')->where('id', $idCustomer)->update($data_update_costumers);
         // $param = new Request();
         // $param->input('email', $email);
         // $param->input('target_number', $phoneNumber);
@@ -503,7 +503,7 @@ class ApiFlutterController extends Controller
     {
         $customerId = $request->customerId;
         $customerUId = $request->customerUId;
-        $data = DB::table('point')
+        $data = DB::connection('mysql_secondary')->table('point')
             ->select('point.no_bill', 'point.jml_trans', 'point.point', 'point.type as point_type', 'cabangs.id AS cabangs_id', 'cabangs.name AS branch_name', 'costumers.costumers_id', 'costumers.name', 'point.created_at AS point_date')
             ->leftJoin('costumers', 'point.costumer_id', '=', 'costumers.id')
             ->leftJoin('cabangs', 'point.cabang_id', '=', 'cabangs.id')
@@ -524,7 +524,7 @@ class ApiFlutterController extends Controller
         //dd($request->all());
         $costumer_id = $request->costumer_id;
         if (!empty($costumer_id)) {
-            $sql_total_point_masuk = DB::table('point')
+            $sql_total_point_masuk = DB::connection('mysql_secondary')->table('point')
                 ->select(DB::raw('SUM(point.point) as total_point'))
                 ->leftJoin('costumers', 'point.costumer_id', '=', 'costumers.id')
                 ->where('costumers.costumers_id', '=', $costumer_id)
@@ -533,7 +533,7 @@ class ApiFlutterController extends Controller
                 ->first();
             $data_total_point_masuk = $sql_total_point_masuk->total_point ?? 0;
 
-            $sql_total_point_keluar = DB::table('point')
+            $sql_total_point_keluar = DB::connection('mysql_secondary')->table('point')
                 ->select(DB::raw('SUM(point.point) as total_point'))
                 ->leftJoin('costumers', 'point.costumer_id', '=', 'costumers.id')
                 ->where('costumers.costumers_id', '=', $costumer_id)
@@ -572,11 +572,11 @@ class ApiFlutterController extends Controller
 
         ]);
 
-        $existsExclusiveMemberGenerate = DB::table('exclusive_member')
+        $existsExclusiveMemberGenerate = DB::connection('mysql_secondary')->table('exclusive_member')
             ->where('full_id', $exclusive_member)
             ->exists();
 
-        $existsExclusiveMemberCostumers = DB::table('costumers')
+        $existsExclusiveMemberCostumers = DB::connection('mysql_secondary')->table('costumers')
             ->where('exclusive_member', '=', $exclusive_member)
             ->where('id', '!=', $customer_id)
             ->exists();
@@ -625,8 +625,8 @@ class ApiFlutterController extends Controller
                 // 'android_password' => md5($password),
                 // 'hint' => $password,
             ];
-            DB::table('costumers')->where('id', $customer_id)->update($data_costumers_update);
-            $customers = DB::table('costumers')
+            DB::connection('mysql_secondary')->table('costumers')->where('id', $customer_id)->update($data_costumers_update);
+            $customers = DB::connection('mysql_secondary')->table('costumers')
                 ->where('id', $customer_id)
                 ->first();
             $result["data_after_update"] = $customers;
@@ -647,7 +647,7 @@ class ApiFlutterController extends Controller
             'android_password' => md5($password),
             'hint' => $password,
         ];
-        DB::table('costumers')->where('id', $customer_id)->update($data_costumers_update);
+        DB::connection('mysql_secondary')->table('costumers')->where('id', $customer_id)->update($data_costumers_update);
         $result["request_data"] = $request->all();
         $result["message"] = 'Update Password Success';
         $result["result"] = 1;
@@ -655,7 +655,7 @@ class ApiFlutterController extends Controller
     }
     public function getImgSlideBeranda(Request $request)
     {
-        $slideBerandaData = DB::table('slide_beranda')
+        $slideBerandaData = DB::connection('mysql_secondary')->table('slide_beranda')
             ->orderBy('id', 'desc')
             ->get();
         foreach ($slideBerandaData as $row) {
@@ -670,7 +670,7 @@ class ApiFlutterController extends Controller
     }
     public function getNews(Request $request)
     {
-        $dataList = DB::table('news')
+        $dataList = DB::connection('mysql_secondary')->table('news')
             ->orderBy('id', 'desc')
             ->get();
         $result["data_list"] = $dataList;
@@ -684,7 +684,7 @@ class ApiFlutterController extends Controller
         //SELECT * FROM `but_products` ORDER BY `but_products`.`id` DESC;
         //https://justusmember.co.id/api/flutter/food_n_beverages?group=1
         if ($request->group == "1") {
-            $dataList = DB::table('but_products')
+            $dataList = DB::connection('mysql_secondary')->table('but_products')
                 ->orderBy('id', 'desc')
                 ->get();
             $result["data_list"] = $dataList;
@@ -692,7 +692,7 @@ class ApiFlutterController extends Controller
         //SELECT * FROM `sub_products` WHERE but_products_id = '23' ORDER BY `sub_products`.`id` DESC;
         //https://justusmember.co.id/api/flutter/food_n_beverages?group=2&group_id_1=23
         if ($request->group == "2" and isset($request->group_id_1)) {
-            $dataList = DB::table('sub_products')
+            $dataList = DB::connection('mysql_secondary')->table('sub_products')
                 ->where('but_products_id', $request->group_id_1)
                 ->orderBy('id', 'desc')
                 ->get();
@@ -701,7 +701,7 @@ class ApiFlutterController extends Controller
         //SELECT * FROM `products` WHERE but_products_id = '23' AND sub_products_id = '11' ORDER BY `products`.`id` DESC;
         //https://justusmember.co.id/api/flutter/food_n_beverages?group=3&group_id_1=23&group_id_2=11
         if ($request->group == "3" and isset($request->group_id_1) and isset($request->group_id_2)) {
-            $dataList = DB::table('products')
+            $dataList = DB::connection('mysql_secondary')->table('products')
                 ->where('but_products_id', $request->group_id_1)
                 ->where('sub_products_id', $request->group_id_2)
                 ->orderBy('id', 'desc')
@@ -717,7 +717,7 @@ class ApiFlutterController extends Controller
     {
         //SELECT * FROM `cabangs` WHERE id != '0' ORDER BY `cabangs`.`id` ASC;
         //https://justusmember.co.id/api/flutter/store_location
-        $dataList = DB::table('cabangs')
+        $dataList = DB::connection('mysql_secondary')->table('cabangs')
             ->where('id', '!=', 0)
             ->orderBy('id', 'ASC')
             ->get();
@@ -733,7 +733,7 @@ class ApiFlutterController extends Controller
         $email = $request->email;
         $tglSekarang = Carbon::today();
         // Inisialisasi query builder
-        $query = DB::table('pushnotification_target as pt')
+        $query = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
             ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
             ->select('pt.*', 'pn.title', 'pn.body', 'pn.photo')
             ->where('pt.program_promo_claimed', '0')
@@ -760,7 +760,7 @@ class ApiFlutterController extends Controller
     public function aboutUs(Request $request)
     {
         //https://justusmember.co.id/api/flutter/about_us
-        $dataList = DB::table('hubungi')->get();
+        $dataList = DB::connection('mysql_secondary')->table('hubungi')->get();
         $result["data_list"] = $dataList;
         $result["data_request"] = $request->all();
         $result["message"] = 'Get storeLocation Success';
@@ -789,7 +789,7 @@ class ApiFlutterController extends Controller
         $day = $today->format('d');
         $program_promo_berlaku_hingga = Carbon::now()->addDays(6);
 
-        $customers = DB::table('costumers')
+        $customers = DB::connection('mysql_secondary')->table('costumers')
             ->select('name', 'email', 'telepon', 'tanggal_lahir', 'firebase_token_device')
             ->whereMonth('tanggal_lahir', $month)
             ->whereDay('tanggal_lahir', $day)
@@ -804,7 +804,7 @@ class ApiFlutterController extends Controller
         //     "email" => "fahmifeb@yahoo.co.id",
         //     "telepon" => "082117589434",
         //     "tanggal_lahir" => $today->format('Y-m-d'),
-        //     "firebase_token_device" => DB::table('costumers')
+        //     "firebase_token_device" => DB::connection('mysql_secondary')->table('costumers')
         //         ->where('email', 'fahmifeb@yahoo.co.id')
         //         ->value('firebase_token_device')
         // ];
@@ -817,7 +817,7 @@ class ApiFlutterController extends Controller
             $birthDay = Carbon::parse($customer->tanggal_lahir)->format('d');
 
             // Cek jika data sudah ada di tabel pushnotification_target
-            $exists = DB::table('pushnotification_target')
+            $exists = DB::connection('mysql_secondary')->table('pushnotification_target')
                 ->where('email_member', $customer->email)
                 ->where('tanggal_lahir', $customer->tanggal_lahir)
                 ->whereYear('created_at', date('Y'))
@@ -826,7 +826,7 @@ class ApiFlutterController extends Controller
             // Hanya tambahkan ke $pushTargets jika belum ada
             if (!$exists && $birthMonth == $month && $birthDay == $day) {
                 // Membuat pesan push notification
-                $id_pushnotification = DB::table('pushnotification')->insertGetId([
+                $id_pushnotification = DB::connection('mysql_secondary')->table('pushnotification')->insertGetId([
                     'status_send' => '1',
                     'title' => 'Happy Birthday!',
                     'body' => 'Selamat Ulang Tahun, ' . $customer->name . '! Semoga hari Anda menyenangkan.',
@@ -848,18 +848,18 @@ class ApiFlutterController extends Controller
 
             // Lakukan batch insert setiap 1000 data
             if (count($pushTargets) >= 1000) {
-                DB::table('pushnotification_target')->insert($pushTargets);
+                DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
                 $pushTargets = []; // Reset array
             }
         }
 
         // Insert sisa data jika ada
         if (!empty($pushTargets)) {
-            DB::table('pushnotification_target')->insert($pushTargets);
+            DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
         }
 
         // buat qrcode 14 digit lebih
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->where(function ($query) {
                 $query->where('qrcode', '')
                     ->orWhereNull('qrcode');
@@ -870,7 +870,7 @@ class ApiFlutterController extends Controller
     }
     public function resetPushNotification()
     {
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->whereDate('program_promo_berlaku_hingga', '=', Carbon::now()->toDateString())
             ->where("program_promo_claimed", "0")
             ->update([
@@ -878,7 +878,7 @@ class ApiFlutterController extends Controller
                 'program_promo_claimed' => '1'
             ]);
 
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->whereDate('created_at', '<=', Carbon::now()->subDays(3))
             ->whereNull('program_promo_berlaku_hingga')
             ->where("program_promo_claimed", "0")
@@ -922,7 +922,7 @@ class ApiFlutterController extends Controller
 
     public function dailyAutoPushNotifInbox()
     {
-        $results = DB::table('pushnotification_target as pt')
+        $results = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
             ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
             ->select('pt.id', 'pt.token', 'pt.created_at', 'pt.tanggal_lahir', 'pn.title', 'pn.body', 'pn.photo')
             ->whereDate('pt.created_at', '=', Carbon::now()->toDateString())
@@ -941,7 +941,7 @@ class ApiFlutterController extends Controller
             // $token
             $message = $this->sendPushNotification($token, $title, $body);
             //dd($token, $title, $body, $message);
-            DB::table('pushnotification_target')
+            DB::connection('mysql_secondary')->table('pushnotification_target')
                 ->where('id', $row->id)
                 ->update(['status_send' => '1']);
         }
@@ -974,7 +974,7 @@ class ApiFlutterController extends Controller
         $threeMonthsAgo = Carbon::now()->subMonths(12);
         $now = Carbon::now();
 
-        $customers = DB::table('costumers')
+        $customers = DB::connection('mysql_secondary')->table('costumers')
                 ->select(
                     'costumers.id',
                     'costumers.name',
@@ -991,7 +991,7 @@ class ApiFlutterController extends Controller
 
         //echo count($customers); die();
 
-        $id_pushnotification = DB::table('pushnotification')->insertGetId([
+        $id_pushnotification = DB::connection('mysql_secondary')->table('pushnotification')->insertGetId([
             'status_send' => '1',
             'title' => $title,
             'body' => $body,
@@ -1013,15 +1013,15 @@ class ApiFlutterController extends Controller
                 'program_promo_berlaku_hingga' => $program_promo_berlaku_hingga,
             ];
             if (count($pushTargets) >= 500) {
-                DB::table('pushnotification_target')->insert($pushTargets);
+                DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
                 $pushTargets = [];
             }
         }
         if (!empty($pushTargets)) {
-            DB::table('pushnotification_target')->insert($pushTargets);
+            DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
         }
         // buat qrcode 14 digit lebih
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->where(function ($query) {
                 $query->where('qrcode', '')
                     ->orWhereNull('qrcode');
@@ -1033,7 +1033,7 @@ class ApiFlutterController extends Controller
     public function singlePushNotifByTarget($title, $body, $gambar, $targetString, $photo, $program_promo_status, $program_promo_berlaku_hingga)
     {
         $emails = explode(",", $targetString);
-        $id_pushnotification = DB::table('pushnotification')->insertGetId([
+        $id_pushnotification = DB::connection('mysql_secondary')->table('pushnotification')->insertGetId([
             'status_send' => '1',
             'title' => $title,
             'body' => $body,
@@ -1043,7 +1043,7 @@ class ApiFlutterController extends Controller
         $pushTargets = [];
         foreach ($emails as $email) {
             $email = trim($email);
-            $token = DB::table('costumers')
+            $token = DB::connection('mysql_secondary')->table('costumers')
                 ->where('email', $email)
                 ->value('firebase_token_device') ?? "";
 
@@ -1059,14 +1059,14 @@ class ApiFlutterController extends Controller
                 'program_promo_berlaku_hingga' => $program_promo_berlaku_hingga,
             ];
             if (count($pushTargets) >= 500) {
-                DB::table('pushnotification_target')->insert($pushTargets);
+                DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
                 $pushTargets = [];
             }
         }
         if (!empty($pushTargets)) {
-            DB::table('pushnotification_target')->insert($pushTargets);
+            DB::connection('mysql_secondary')->table('pushnotification_target')->insert($pushTargets);
         }
-        DB::table('pushnotification_target')
+        DB::connection('mysql_secondary')->table('pushnotification_target')
             ->where(function ($query) {
                 $query->where('qrcode', '')
                     ->orWhereNull('qrcode');
@@ -1075,11 +1075,35 @@ class ApiFlutterController extends Controller
                 'qrcode' => DB::raw("CONCAT(id, DATE_FORMAT(created_at, '%y%m%d%H%i%s'))")
             ]);
     }
-    public function getLatestVersionFromServer()
+    public function getLatestVersionFromServer(Request $request)
     {
-        $return['version'] = "10.4.59+59";
-        $return['update_now'] = true;
-        return $this->returnJsonHeader($return);
+        $platform = $request->query('platform'); // 'android' or 'ios'
+        
+        if($platform == 'ios') {
+            $return['version'] = "10.4.61";
+            $return['update_now'] = true;
+            return $this->returnJsonHeader($return);
+        }else if($platform == 'android') {
+            $return['version'] = "10.4.61";
+            $return['update_now'] = true;
+            return $this->returnJsonHeader($return);
+        } else {
+            $return['status'] = false;
+            $return['message'] = "Platform not supported";
+            return $this->returnJsonHeader($return);
+        }
+    }
+
+    public function dataPopupAlert()
+    {
+        $popupList = DB::connection('mysql_secondary')->table('popup_alert')->where('is_active', 1)
+            ->orderBy('created_at', 'desc')
+            ->get(['title', 'message']);
+
+        return response()->json([
+            'status' => true,
+            'popups' => $popupList
+        ]);
     }
 
     public function test()
@@ -1087,7 +1111,7 @@ class ApiFlutterController extends Controller
         // $threeMonthsAgo = Carbon::now()->subMonths(6);
         // $now = Carbon::now();
 
-        // $customers = DB::table('costumers')
+        // $customers = DB::connection('mysql_secondary')->table('costumers')
         //         ->select(
         //             'costumers.id',
         //             'costumers.name',
@@ -1104,7 +1128,7 @@ class ApiFlutterController extends Controller
         //         ->count();
 
 
-        // $customer = DB::table('pushnotification_target')
+        // $customer = DB::connection('mysql_secondary')->table('pushnotification_target')
         //         ->select(DB::raw("CASE 
         //         WHEN EXISTS (SELECT 1 FROM `point` WHERE no_bill = '0604.FCL.24.12') 
         //         THEN 'ada' 
@@ -1117,7 +1141,7 @@ class ApiFlutterController extends Controller
         //         ->limit(1)
         //         ->first();
             
-        // $query = DB::table('pushnotification_target as pt')
+        // $query = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
         //     ->leftjoin('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
         //     ->select('pt.*', 'pn.title', 'pn.body', 'pn.photo')
         //     ->where('pt.program_promo_claimed', '0')
@@ -1134,7 +1158,7 @@ class ApiFlutterController extends Controller
         // $month = $today->format('m');
         // $day = $today->format('d');
             
-        // $customers = DB::table('costumers')
+        // $customers = DB::connection('mysql_secondary')->table('costumers')
         //     ->select('name', 'email', 'telepon', 'tanggal_lahir', 'firebase_token_device')
         //     ->whereMonth('tanggal_lahir', $month)
         //     ->whereDay('tanggal_lahir', $day)
@@ -1143,7 +1167,7 @@ class ApiFlutterController extends Controller
         //     ->get()
         //     ->count();
 
-        // $results = DB::table('pushnotification_target as pt')
+        // $results = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
         //     ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
         //     ->select('pt.id', 'pt.token', 'pt.created_at', 'pt.tanggal_lahir', 'pn.title', 'pn.body', 'pn.photo')
         //     ->whereDate('pt.created_at', '=', Carbon::now()->toDateString())
@@ -1157,7 +1181,7 @@ class ApiFlutterController extends Controller
 
         // $tglSekarang = Carbon::today();
         // // Inisialisasi query builder
-        // $query = DB::table('pushnotification_target as pt')
+        // $query = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
         //     ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
         //     ->select('pt.*', 'pn.title', 'pn.body', 'pn.photo')
         //     ->where('pt.program_promo_claimed', '0')
@@ -1171,7 +1195,7 @@ class ApiFlutterController extends Controller
 
 
 
-        // $results = DB::table('pushnotification_target as pt')
+        // $results = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
         //     ->join('pushnotification as pn', 'pn.id', '=', 'pt.id_pushnotification')
         //     ->select('pt.id', 'pt.token', 'pt.created_at', 'pt.tanggal_lahir', 'pn.title', 'pn.body', 'pn.photo')
         //     ->where('pt.id', '=', '1')
@@ -1196,7 +1220,7 @@ class ApiFlutterController extends Controller
 
         // $email = 'sp.dhartia@gmail.com';
 
-        // $result = DB::table('pushnotification_target as pt')
+        // $result = DB::connection('mysql_secondary')->table('pushnotification_target as pt')
         //     ->join('pushnotification as p', 'pt.id_pushnotification', '=', 'p.id')
         //     ->select('pt.id as ptid', 'pt.*', 'p.*')
         //     ->where('pt.email_member', $email)

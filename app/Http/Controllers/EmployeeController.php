@@ -17,21 +17,23 @@ class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DB::table('users');
+        $query = DB::table('users')->leftjoin('tbl_data_outlet', 'users.id_outlet', '=', 'tbl_data_outlet.id_outlet')
+            ->select('users.*', 'tbl_data_outlet.nama_outlet');
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('nama_lengkap', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%")
-                  ->orWhere('no_ktp', 'like', "%$search%")
+                $q->where('users.nama_lengkap', 'like', "%$search%")
+                  ->orWhere('users.email', 'like', "%$search%")
+                  ->orWhere('users.no_ktp', 'like', "%$search%")
+                  ->orWhere('tbl_data_outlet.nama_outlet', 'like', "%$search%")
                 ;
             });
         }
         if ($request->filled('status') OR empty($request->status)) {
             $status = $request->status == 'inactive' ? 'B' : 'A';
-            $query->where('status', $status);
+            $query->where('users.status', $status);
         }
-        $customers = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
+        $customers = $query->orderBy('users.id', 'desc')->paginate(10)->withQueryString();
         
         return Inertia::render('Employee/Index', [
             'customers' => $customers,
@@ -66,7 +68,7 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'nik' => 'required|string|max:20',
             'name' => 'required|string|max:100',
-            'region' => 'string|max:20',
+            'region' => 'nullable|string|max:20',
             'status' => 'required|in:A,B',
             'gender' => 'nullable|string|max:10',
             'place_birth' => 'nullable|string|max:100',
@@ -210,7 +212,7 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'nik' => 'required|string|max:20',
             'name' => 'required|string|max:100',
-            'region' => 'string|max:20',
+            'region' => 'nullable|string|max:20',
             'status' => 'required|in:A,B',
             'gender' => 'nullable|string|max:10',
             'place_birth' => 'nullable|string|max:100',
@@ -251,7 +253,7 @@ class EmployeeController extends Controller
             'position' => 'nullable|string|max:100',
             // 'upload_latest_color_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:1024',
         ]);
-        
+
         $customer = DB::table('users')->where('id', $id)->first();
         $oldData = $customer;
 
@@ -282,7 +284,7 @@ class EmployeeController extends Controller
 
             $pathFoto = $request->file('upload_latest_color_photo')->store('employee', 'public');
         }
-  
+
         DB::table('users')->where('id', $id)->update([
             'nik' => $validated['nik'],
             'nama_lengkap' => $validated['name'],

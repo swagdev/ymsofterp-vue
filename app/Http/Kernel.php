@@ -12,11 +12,11 @@ class Kernel extends HttpKernel
     ];
 
     protected $middlewareGroups = [
-        //'api' => [
+        'api' => [
             // ...jangan ada VerifyCsrfToken di sini!
-        //    'throttle:api',
-         //   \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        //],
+           'throttle:api',
+           \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
     ];
 
     // ... existing code ...
