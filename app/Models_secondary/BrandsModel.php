@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Models_secondary;
 
 use Illuminate\Database\Eloquent\Model;
 
-class BrandsModelItem extends Model
+class BrandsModel extends Model
 {
-    protected $table = 'webprofile_brand_items';
+    protected $connection = 'mysql_secondary';
+    protected $table = 'webprofile_brands';
     protected $primaryKey = 'id';
     protected $guarded = [];
 
